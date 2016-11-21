@@ -28,7 +28,6 @@ cells_eth_10km as foo2
 where foo1.cell_id = foo2.cell_id;
 --------------------------------------
 --endemics
-
 drop table if exists species_richness_eth_10km_anmls_endmc;
 create table species_richness_eth_10km_anmls_endmc as
 select count(id_no) as richness ,cell_id from (
