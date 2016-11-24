@@ -116,3 +116,14 @@ ALTER TABLE out_cell_imp_shape_eth_10km_2013_plnt2
  ALTER COLUMN the_geom TYPE geometry(MultiPolygon,4326) 
   USING ST_Transform(the_geom,4326);
   
+
+-----------------------------------------------------
+
+--make final importance values for watersheds by grouping by watershed ids
+DROP TABLE IF EXISTS out_cell_imp_eth_10km_2013_plnt2;
+CREATE TABLE out_cell_imp_eth_10km_2013_plnt2 AS
+SELECT o.num, SUM(o.sppimp_eq) AS cellimp_eq /*, SUM(o.sppimp_max) AS cellimp_max, SUM(o.sppimp_min) AS cellimp_min */
+FROM (select *, 1 as num from out_sppimp_eth_10km_2013_plnt2) as o
+GROUP BY o.num;
+
+  

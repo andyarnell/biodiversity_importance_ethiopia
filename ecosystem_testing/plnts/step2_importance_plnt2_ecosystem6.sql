@@ -80,8 +80,8 @@ where b.lc = l.lc_raw;
 --this next table creation sql seems to take a lot of time compared to the rest of the simple functions (especially when many cells)
 select * from lc_areas_cells_eth_10km_2013;
 
-DROP TABLE IF EXISTS out_spp_allsuitareacells_eth_10km_2013_plnt2;
-CREATE TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2 AS 
+DROP TABLE IF EXISTS out_spp_allsuitareacells_eth_10km_2013_plnt2_wet;
+CREATE TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2_wet AS 
 SELECT
 h.taxonid as id_no,
 /*h.species as  firstofspecies, */
@@ -91,7 +91,13 @@ FROM lc_areas_cells_eth_10km_2013_plnt2 AS lc
 inner join 
 (
 select distinct taxonid, /*species,*/ suitlc  
-from habitat_prefs_eth_10km as foo1,
+from 
+(
+select distinct spchabimpdesc, taxonid, suitlc
+from habitat_prefs_eth_10km 
+where suitlc in ('13','19')
+)
+as foo1,
 (select id_no, species from species_intersecting_eth_10km_temp_plnt2) as foo2
 where spchabimpdesc = 'Suitable' 
 and foo1.taxonid = foo2.id_no
@@ -101,26 +107,26 @@ GROUP BY h.taxonid, /*h.species,*/ lc.cell_id;
 
                              
 --add column 
-ALTER TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2 
+ALTER TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2_wet 
 ADD cell_sp varchar;
 --add unique id for combination of cell and species
-UPDATE out_spp_allsuitareacells_eth_10km_2013_plnt2
+UPDATE out_spp_allsuitareacells_eth_10km_2013_plnt2_wet
 SET 
 cell_sp = (cell_id/*::numeric(20,4)*/)  || '_' || id_no /*firstofspecies*/;
 
 
 
 -- add an index
-ALTER TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2
+ALTER TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2_wet
 ADD COLUMN id bigserial NOT NULL,
-ADD constraint out_spp_allsuitareacells_eth_10km_2013_plnt2_pkey PRIMARY KEY (id);
+ADD constraint out_spp_allsuitareacells_eth_10km_2013_plnt2_wet_pkey PRIMARY KEY (id);
 
 
 
 --view subset of result to check
--- SELECT * FROM out_spp_allsuitareacells_eth_10km_2013_plnt2 LIMIT 1000; 
+-- SELECT * FROM out_spp_allsuitareacells_eth_10km_2013_plnt2_wet LIMIT 1000; 
 /*SELECT os.*, (os.sumofarea_lc_cell/c.cell_area) as prop, c.cell_area 
-FROM (select * from out_spp_allsuitareacells_eth_10km_2013_plnt2) os, cells_eth_10km as c  
+FROM (select * from out_spp_allsuitareacells_eth_10km_2013_plnt2_wet) os, cells_eth_10km as c  
 WHERE c.cell_id=os.cell_id /*and (os.sumofarea_lc_cell/c.cell_area) >1 */ order by c.cell_id;
 */
 
@@ -144,42 +150,42 @@ INSERT INTO species_overlap_eth_10km_plnt2
 */
 
 --This query will create a table with equal, min and max suitable area options described above
-DROP TABLE IF EXISTS  out_spp_calc_areacells_eth_10km_2013_plnt2;
-CREATE TABLE out_spp_calc_areacells_eth_10km_2013_plnt2 AS
+DROP TABLE IF EXISTS  out_spp_calc_areacells_eth_10km_2013_plnt2_wet;
+CREATE TABLE out_spp_calc_areacells_eth_10km_2013_plnt2_wet AS
 select 
 /*sp.species, */
 sp.id_no,
 sp.cell_sp, 
 sp.cell_prop, 
-(sp.cell_prop::numeric) * op.sumofarea_lc_cell as cell_suitarea_eq_eth_2013_plnt2,
+(sp.cell_prop::numeric) * op.sumofarea_lc_cell as cell_suitarea_eq_eth_2013_plnt2_wet,
 CASE WHEN sp.area<op.sumofarea_lc_cell THEN
-sp.area ELSE op.sumofarea_lc_cell END as cell_suitarea_max_eth_2013_plnt2,
+sp.area ELSE op.sumofarea_lc_cell END as cell_suitarea_max_eth_2013_plnt2_wet,
 CASE WHEN sp.area>((c.cell_area)-(op.sumofarea_lc_cell)) THEN
-(sp.area-(c.cell_area-op.sumofarea_lc_cell)) ELSE 0 END as cell_suitarea_min_eth_2013_plnt2,
+(sp.area-(c.cell_area-op.sumofarea_lc_cell)) ELSE 0 END as cell_suitarea_min_eth_2013_plnt2_wet,
 sp.cell_id 
 FROM 
-species_overlap_eth_10km_plnt2 AS sp 
+species_overlap_eth_10km_plnt AS sp 
 INNER JOIN 
-out_spp_allsuitareacells_eth_10km_2013_plnt2 as op 
+out_spp_allsuitareacells_eth_10km_2013_plnt2_wet as op 
 ON sp.cell_sp = op.cell_sp
 INNER JOIN 
 cells_eth_10km AS c ON op.cell_id = c.cell_id
 WHERE (((sp.cell_prop)<>0));
 
-select * from species_overlap_eth_10km_plnt2 limit 10;
+select * from species_overlap_eth_10km_plnt limit 10;
 
 --add an id column as a primary key
-ALTER TABLE out_spp_calc_areacells_eth_10km_2013_plnt2
+ALTER TABLE out_spp_calc_areacells_eth_10km_2013_plnt2_wet
 ADD COLUMN id bigserial NOT NULL,
-ADD constraint out_spp_calc_areacells_eth_10km_2013_plnt2_pkey PRIMARY KEY (id);
+ADD constraint out_spp_calc_areacells_eth_10km_2013_plnt2_wet_pkey PRIMARY KEY (id);
 
 
 
 --check how many remain
--- SELECT count(1) from (select species from out_spp_calc_areacells_eth_10km_2013_plnt2 group by species) as foo;
+-- SELECT count(1) from (select species from out_spp_calc_areacells_eth_10km_2013_plnt2_wet group by species) as foo;
 
 --view subset of result to check it worked - 
--- SELECT * FROM out_spp_calc_areacells_eth_10km_2013_plnt2 LIMIT 1000;
+-- SELECT * FROM out_spp_calc_areacells_eth_10km_2013_plnt2_wet LIMIT 1000;
 
 
 --checking orignal species overlap with watershed areas and the proportions between them 
@@ -188,11 +194,11 @@ ADD constraint out_spp_calc_areacells_eth_10km_2013_plnt2_pkey PRIMARY KEY (id);
 
 
 --Calculate the total area of suitable habitat in the region
-DROP TABLE IF EXISTS  out_spp_allsuitarearegion_eth_10km_2013_plnt2;
-CREATE TABLE out_spp_allsuitarearegion_eth_10km_2013_plnt2 AS
+DROP TABLE IF EXISTS  out_spp_allsuitarearegion_eth_10km_2013_plnt2_wet;
+CREATE TABLE out_spp_allsuitarearegion_eth_10km_2013_plnt2_wet AS
 SELECT /*o.species, */ o.id_no,
-SUM(o.cell_suitarea_max_eth_2013_plnt2) AS sumofcell_suitarea_max_eth_2013_plnt2, 
-SUM(o.cell_suitarea_eq_eth_2013_plnt2) AS sumofcell_suitarea_eq_eth_2013_plnt2, 
-SUM(o.cell_suitarea_min_eth_2013_plnt2) AS sumofcell_suitarea_min_eth_2013_plnt2 
-FROM out_spp_calc_areacells_eth_10km_2013_plnt2 AS o
+SUM(o.cell_suitarea_max_eth_2013_plnt2_wet) AS sumofcell_suitarea_max_eth_2013_plnt2_wet, 
+SUM(o.cell_suitarea_eq_eth_2013_plnt2_wet) AS sumofcell_suitarea_eq_eth_2013_plnt2_wet, 
+SUM(o.cell_suitarea_min_eth_2013_plnt2_wet) AS sumofcell_suitarea_min_eth_2013_plnt2_wet 
+FROM out_spp_calc_areacells_eth_10km_2013_plnt2_wet AS o
 GROUP BY o.id_no/*, o.species*/;

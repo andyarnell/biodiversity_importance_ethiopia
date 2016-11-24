@@ -27,5 +27,11 @@ ogr2ogr --config FGDB_BULK_LOAD YES  -progress -f "ESRI Shapefile" -sql "SELECT 
 
 
 
+ogr2ogr --config FGDB_BULK_LOAD YES  -progress -f "ESRI Shapefile" -sql "SELECT * FROM eth.out_cell_imp_shape_eth_10km_2013_plnt2_endmc" C:\Data\final_bd_results\eth_2013\plnts2_endmcs PG:"host=localhost user=postgres password=Seltaeb1 dbname=biodiv_processing" -nln out_cell_imp_shape_eth_10km_2013_plnt2_endmc -nlt POLYGON -lco "SHPT=POLYGON"  -a_srs "EPSG:4326"
+
+ogr2ogr --config FGDB_BULK_LOAD YES  -progress -f "ESRI Shapefile" -sql "SELECT * FROM eth.out_cell_imp_shape_eth_10km_2013_plnt2" C:\Data\final_bd_results\eth_2013\plnts2 PG:"host=localhost user=postgres password=Seltaeb1 dbname=biodiv_processing" -nln out_cell_imp_shape_eth_10km_2013_plnt2 -nlt POLYGON -lco "SHPT=POLYGON"  -a_srs "EPSG:4326"
+
+
+
 
 */

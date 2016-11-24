@@ -84,10 +84,11 @@ DROP TABLE IF EXISTS out_spp_allsuitareacells_eth_10km_2013_plnt2;
 CREATE TABLE out_spp_allsuitareacells_eth_10km_2013_plnt2 AS 
 SELECT
 h.taxonid as id_no,
+h.suitlc,
 /*h.species as  firstofspecies, */
 lc.cell_id as cell_id, 
 sum(lc.area_lc_cell) AS sumofarea_lc_cell 
-FROM lc_areas_cells_eth_10km_2013_plnt2 AS lc 
+FROM lc_areas_cells_eth_10km_2013 AS lc 
 inner join 
 (
 select distinct taxonid, /*species,*/ suitlc  
@@ -97,7 +98,9 @@ where spchabimpdesc = 'Suitable'
 and foo1.taxonid = foo2.id_no
 ) AS h 
 on lc.lc = h.suitlc
-GROUP BY h.taxonid, /*h.species,*/ lc.cell_id;
+GROUP BY h.taxonid, /*h.species,*/ lc.cell_id
+,h.suitlc;
+
 
                              
 --add column 
@@ -148,6 +151,7 @@ DROP TABLE IF EXISTS  out_spp_calc_areacells_eth_10km_2013_plnt2;
 CREATE TABLE out_spp_calc_areacells_eth_10km_2013_plnt2 AS
 select 
 /*sp.species, */
+op.suitlc,
 sp.id_no,
 sp.cell_sp, 
 sp.cell_prop, 
@@ -158,7 +162,7 @@ CASE WHEN sp.area>((c.cell_area)-(op.sumofarea_lc_cell)) THEN
 (sp.area-(c.cell_area-op.sumofarea_lc_cell)) ELSE 0 END as cell_suitarea_min_eth_2013_plnt2,
 sp.cell_id 
 FROM 
-species_overlap_eth_10km_plnt2 AS sp 
+species_overlap_eth_10km_plnt AS sp 
 INNER JOIN 
 out_spp_allsuitareacells_eth_10km_2013_plnt2 as op 
 ON sp.cell_sp = op.cell_sp
@@ -190,9 +194,10 @@ ADD constraint out_spp_calc_areacells_eth_10km_2013_plnt2_pkey PRIMARY KEY (id);
 --Calculate the total area of suitable habitat in the region
 DROP TABLE IF EXISTS  out_spp_allsuitarearegion_eth_10km_2013_plnt2;
 CREATE TABLE out_spp_allsuitarearegion_eth_10km_2013_plnt2 AS
-SELECT /*o.species, */ o.id_no,
+SELECT /*o.species, */ o.id_no, 
+o.suitlc,
 SUM(o.cell_suitarea_max_eth_2013_plnt2) AS sumofcell_suitarea_max_eth_2013_plnt2, 
 SUM(o.cell_suitarea_eq_eth_2013_plnt2) AS sumofcell_suitarea_eq_eth_2013_plnt2, 
 SUM(o.cell_suitarea_min_eth_2013_plnt2) AS sumofcell_suitarea_min_eth_2013_plnt2 
 FROM out_spp_calc_areacells_eth_10km_2013_plnt2 AS o
-GROUP BY o.id_no/*, o.species*/;
+GROUP BY o.id_no, o.suitlc/*, o.species*/;

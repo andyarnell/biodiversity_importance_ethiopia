@@ -39,10 +39,11 @@ order by
 osrun.sumofarea/spo.eoo_area desc
 AND osrun.sumofarea/spo.eoo_area >=9.99999;*/ 
 
+
 --importance script which calculates importance for subsets: i)  all species ii) IUCN threatened (CR EN VU)  species, iii) mammals, iv) birds, and v) amphibians 
 DROP TABLE IF EXISTS out_sppimp_eth_10km_2013_plnt2;
 CREATE TABLE out_sppimp_eth_10km_2013_plnt2 AS 
-SELECT /*osrd.species,*/ osrd.id_no::bigint, osrd.cell_id, osrd.cell_sp,
+SELECT /*osrd.species,*/ osrd.id_no::bigint, osrd.cell_id, osrd.cell_sp, osra.suitlc,
 CASE WHEN osra.sumofcell_suitarea_max_eth_2013_plnt2=0 
 THEN 0 ELSE ((osrd.cell_suitarea_max_eth_2013_plnt2/osra.sumofcell_suitarea_max_eth_2013_plnt2)*(osrun.sumofarea/spo.eoo_area)) END 
 AS sppimp_max, 
@@ -93,13 +94,14 @@ st.id_no::bigint = osrd.id_no::bigint;
 --select sum(sumofarea) from out_spp_allarearegion_eth_10km
 --select sum(sumofarea) from out_spp_allarearegion_eth_20km
 
+select * from out_sppimp_eth_10km_2013_plnt2 limit 10;
 
 --make final importance values for watersheds by grouping by watershed ids
 DROP TABLE IF EXISTS out_cell_imp_eth_10km_2013_plnt2;
 CREATE TABLE out_cell_imp_eth_10km_2013_plnt2 AS
-SELECT o.cell_id, SUM(o.sppimp_eq) AS cellimp_eq, SUM(o.sppimp_max) AS cellimp_max, SUM(o.sppimp_min) AS cellimp_min 
+SELECT o.cell_id, o.suitlc, SUM(o.sppimp_eq) AS cellimp_eq, SUM(o.sppimp_max) AS cellimp_max, SUM(o.sppimp_min) AS cellimp_min 
 FROM out_sppimp_eth_10km_2013_plnt2 as o
-GROUP BY o.cell_id;
+GROUP BY o.cell_id,o.suitlc;
 
 
 --join final results to watershed polygons for viewing
@@ -116,3 +118,11 @@ ALTER TABLE out_cell_imp_shape_eth_10km_2013_plnt2
  ALTER COLUMN the_geom TYPE geometry(MultiPolygon,4326) 
   USING ST_Transform(the_geom,4326);
   
+-----------------------------------------------------
+
+--make final importance values for watersheds by grouping by watershed ids
+DROP TABLE IF EXISTS out_cell_imp_eth_10km_2013_plnt2;
+CREATE TABLE out_cell_imp_eth_10km_2013_plnt2 AS
+SELECT o.num, o.suitlc,SUM(o.sppimp_eq) AS cellimp_eq /*, SUM(o.sppimp_max) AS cellimp_max, SUM(o.sppimp_min) AS cellimp_min */
+FROM (select *, 1 as num from out_sppimp_eth_10km_2013_plnt2) as o
+GROUP BY o.num, o.suitlc;
